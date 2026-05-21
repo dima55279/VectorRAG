@@ -1,1 +1,5 @@
 data/faiss_index
+venv
+logs
+app/*/__pycache__
+app/__pycache__

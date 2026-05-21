@@ -6,7 +6,7 @@ class Reranker:
     def __init__(self):
 
         self.model = CrossEncoder(
-            "BAAI/bge-reranker-large"
+            "BAAI/bge-reranker-v2-m3", device="cpu"
         )
 
     def rerank(self, query, docs, top_k=5):

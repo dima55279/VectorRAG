@@ -7,8 +7,7 @@ from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-_model = "BAAI/bge-m3"
-
+_model = None
 
 def normalize(vectors):
 
@@ -34,9 +33,7 @@ def get_embedding_model():
             f"{EMBEDDING_MODEL}"
         )
 
-        _model = SentenceTransformer(
-            EMBEDDING_MODEL
-        )
+        _model = SentenceTransformer(EMBEDDING_MODEL, device="cpu")
 
         logger.info("Embedding model loaded")
 
@@ -47,14 +44,8 @@ def embed_texts(texts):
 
     model = get_embedding_model()
 
-    texts = [
-        f"passage: {t}"
-        for t in texts
-    ]
-
     embeddings = model.encode(
-        texts,
-        show_progress_bar=True
+        texts
     )
 
     return normalize(embeddings)
