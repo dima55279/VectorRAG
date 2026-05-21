@@ -4,10 +4,11 @@ from tqdm import tqdm
 class ProgressManager:
 
     @staticmethod
-    def create_progress(total, desc):
+    def track(iterable, desc, total=None):
 
         return tqdm(
-            total=total,
+            iterable,
             desc=desc,
+            total=total,
             ncols=100
         )
