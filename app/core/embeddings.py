@@ -1,13 +1,13 @@
 from sentence_transformers import SentenceTransformer
 import numpy as np
 
-from app.core.config import EMBEDDING_MODEL
 from app.utils.logger import get_logger
-
+from app.utils.progress import ProgressManager
 
 logger = get_logger(__name__)
 
 _model = None
+
 
 def normalize(vectors):
 
@@ -28,27 +28,57 @@ def get_embedding_model():
 
     if _model is None:
 
-        logger.info(
-            f"Loading embeddings model: "
-            f"{EMBEDDING_MODEL}"
-        )
+        logger.info("Loading embedding model")
 
-        _model = SentenceTransformer(EMBEDDING_MODEL, device="cpu")
+        _model = SentenceTransformer(
+            "BAAI/bge-m3",
+            device="cpu"
+        )
 
         logger.info("Embedding model loaded")
 
     return _model
 
 
-def embed_texts(texts):
+def embed_texts(
+    texts,
+    batch_size=16
+):
 
     model = get_embedding_model()
 
-    embeddings = model.encode(
-        texts
+    texts = [
+        f"passage: {t}"
+        for t in texts
+    ]
+
+    embeddings = []
+
+    logger.info(
+        f"Generating embeddings "
+        f"for {len(texts)} chunks"
     )
 
-    return normalize(embeddings)
+    for i in ProgressManager.track(
+        range(0, len(texts), batch_size),
+        desc="Embedding batches"
+    ):
+
+        batch = texts[i:i + batch_size]
+
+        batch_embeddings = model.encode(
+            batch
+        )
+
+        embeddings.extend(
+            batch_embeddings
+        )
+
+    embeddings = normalize(embeddings)
+
+    logger.info("Embeddings completed")
+
+    return embeddings
 
 
 def embed_query(query):
