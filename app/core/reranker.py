@@ -4,19 +4,15 @@ from sentence_transformers import CrossEncoder
 class Reranker:
 
     def __init__(self):
-        # === Фиксы для torch meta tensor ошибки ===
+        print("🔄 Загрузка Reranker (BAAI/bge-reranker-v2-m3)...")
+        
+        # Фиксы для проблем с torch
         torch.set_default_dtype(torch.float32)
-        if hasattr(torch, 'backends'):
-            torch.backends.cuda.matmul.allow_tf32 = False
-            torch.backends.cudnn.allow_tf32 = False
-
-        print("🔄 Загрузка Reranker...")
-
+        
         self.model = CrossEncoder(
             "BAAI/bge-reranker-v2-m3",
             device="cpu",
-            trust_remote_code=True,
-            model_kwargs={"torch_dtype": torch.float32}
+            trust_remote_code=True
         )
         
         print("✅ Reranker успешно загружен")
@@ -30,9 +26,8 @@ class Reranker:
         try:
             scores = self.model.predict(pairs)
         except Exception as e:
-            print(f"⚠️ Ошибка в reranker.predict: {e}")
-            # Fallback — возвращаем как есть
-            return docs[:top_k]
+            print(f"⚠️ Ошибка при rerank.predict: {e}")
+            return docs[:top_k]  # fallback
 
         reranked = sorted(
             zip(docs, scores),
