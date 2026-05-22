@@ -1,129 +1,59 @@
+# app/agents/csv_agent.py
 import pandas as pd
+from concurrent.futures import ThreadPoolExecutor
+from tqdm import tqdm
 
-from concurrent.futures import (
-    ThreadPoolExecutor,
-    as_completed
-)
-
+from app.agents.orchestrator import OrchestratorAgent
 from app.utils.logger import get_logger
-from app.utils.progress import ProgressManager
-from app.utils.io import save_csv
+
 
 logger = get_logger(__name__)
 
 
 class CSVAgent:
 
-    def __init__(
-        self,
-        rag_pipeline,
-        max_workers=10
-    ):
-
-        self.rag = rag_pipeline
+    def __init__(self, max_workers=8):
+        self.orchestrator = OrchestratorAgent()
         self.max_workers = max_workers
 
-    def process_question(
-        self,
-        question
-    ):
-
+    def process_row(self, row: dict):
         try:
-
-            result = self.rag.ask(
-                question
-            )
-
+            result = self.orchestrator.run_question(row["question"])
             return {
+                "question": row["question"],
                 "answer": result["answer"],
-                "documents": result["documents"]
+                "document": str(result["documents"])   # str, чтобы в csv нормально сохранилось
             }
-
         except Exception as e:
-
-            logger.exception(
-                f"CSV processing error: {e}"
-            )
-
+            logger.exception(f"Ошибка при обработке вопроса: {row['question']}")
             return {
-                "answer": (
-                    "Ошибка обработки вопроса"
-                ),
-                "documents": []
+                "question": row["question"],
+                "answer": "Ошибка обработки вопроса",
+                "document": "[]"
             }
 
-    def process_dataframe(
-        self,
-        df
-    ):
-
-        results = [
-            None
-        ] * len(df)
-
-        futures = {}
-
-        logger.info(
-            f"Processing {len(df)} questions"
-        )
-
-        with ThreadPoolExecutor(
-            max_workers=self.max_workers
-        ) as executor:
-
-            for idx, row in df.iterrows():
-
-                future = executor.submit(
-                    self.process_question,
-                    row["question"]
-                )
-
-                futures[future] = idx
-
-            for future in ProgressManager.track(
-                as_completed(futures),
-                desc="Processing CSV",
-                total=len(futures)
+    def process_csv(self, input_csv: str, output_csv: str):
+        logger.info(f"Загрузка CSV: {input_csv}")
+        
+        df = pd.read_csv(input_csv)
+        rows = df.to_dict("records")
+        
+        results = []
+        
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            outputs = executor.map(self.process_row, rows)
+            
+            for result in tqdm(
+                outputs, 
+                total=len(rows), 
+                desc="Processing questions"
             ):
+                results.append(result)
 
-                idx = futures[future]
-
-                result = future.result()
-
-                results[idx] = {
-                    "question":
-                        df.iloc[idx]["question"],
-
-                    "answer":
-                        result["answer"],
-
-                    "document":
-                        str(result["documents"])
-                }
-
-        return pd.DataFrame(results)
-
-    def process_csv(
-        self,
-        input_path,
-        output_path
-    ):
-
-        logger.info(
-            f"Loading CSV: {input_path}"
-        )
-
-        df = pd.read_csv(input_path)
-
-        result_df = self.process_dataframe(df)
-
-        save_csv(
-            result_df,
-            output_path
-        )
-
-        logger.info(
-            f"Saved results: {output_path}"
-        )
-
+        result_df = pd.DataFrame(results)
+        
+        # Сохраняем
+        result_df.to_csv(output_csv, index=False)
+        
+        logger.info(f"Результат сохранён: {output_csv}")
         return result_df
