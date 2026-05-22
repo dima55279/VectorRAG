@@ -1,55 +1,129 @@
-from concurrent.futures import ThreadPoolExecutor
-from tqdm import tqdm
 import pandas as pd
 
-from app.agents.orchestrator import OrchestratorAgent
+from concurrent.futures import (
+    ThreadPoolExecutor,
+    as_completed
+)
+
+from app.utils.logger import get_logger
+from app.utils.progress import ProgressManager
+from app.utils.io import save_csv
+
+logger = get_logger(__name__)
 
 
 class CSVAgent:
 
-    def __init__(self):
+    def __init__(
+        self,
+        rag_pipeline,
+        max_workers=10
+    ):
 
-        self.orchestrator = OrchestratorAgent()
+        self.rag = rag_pipeline
+        self.max_workers = max_workers
 
-    def process_row(self, row):
+    def process_question(
+        self,
+        question
+    ):
 
-        result = self.orchestrator.run_question(
-            row["question"]
-        )
+        try:
 
-        return {
-            "question": row["question"],
-            "answer": result["answer"],
-            "document": result["documents"]
-        }
-
-    def process_csv(self, input_csv, output_csv):
-
-        df = pd.read_csv(input_csv)
-
-        rows = df.to_dict("records")
-
-        results = []
-
-        with ThreadPoolExecutor(max_workers=8) as executor:
-
-            outputs = executor.map(
-                self.process_row,
-                rows
+            result = self.rag.ask(
+                question
             )
 
-            for result in tqdm(
-                outputs,
-                total=len(rows),
-                desc="Processing questions"
-            ):
-                results.append(result)
+            return {
+                "answer": result["answer"],
+                "documents": result["documents"]
+            }
 
-        out_df = pd.DataFrame(results)
+        except Exception as e:
 
-        out_df.to_csv(
-            output_csv,
-            index=False
+            logger.exception(
+                f"CSV processing error: {e}"
+            )
+
+            return {
+                "answer": (
+                    "Ошибка обработки вопроса"
+                ),
+                "documents": []
+            }
+
+    def process_dataframe(
+        self,
+        df
+    ):
+
+        results = [
+            None
+        ] * len(df)
+
+        futures = {}
+
+        logger.info(
+            f"Processing {len(df)} questions"
         )
 
-        print(f"Saved to {output_csv}")
+        with ThreadPoolExecutor(
+            max_workers=self.max_workers
+        ) as executor:
+
+            for idx, row in df.iterrows():
+
+                future = executor.submit(
+                    self.process_question,
+                    row["question"]
+                )
+
+                futures[future] = idx
+
+            for future in ProgressManager.track(
+                as_completed(futures),
+                desc="Processing CSV",
+                total=len(futures)
+            ):
+
+                idx = futures[future]
+
+                result = future.result()
+
+                results[idx] = {
+                    "question":
+                        df.iloc[idx]["question"],
+
+                    "answer":
+                        result["answer"],
+
+                    "document":
+                        str(result["documents"])
+                }
+
+        return pd.DataFrame(results)
+
+    def process_csv(
+        self,
+        input_path,
+        output_path
+    ):
+
+        logger.info(
+            f"Loading CSV: {input_path}"
+        )
+
+        df = pd.read_csv(input_path)
+
+        result_df = self.process_dataframe(df)
+
+        save_csv(
+            result_df,
+            output_path
+        )
+
+        logger.info(
+            f"Saved results: {output_path}"
+        )
+
+        return result_df
