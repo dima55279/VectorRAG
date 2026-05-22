@@ -1,12 +1,34 @@
 from sentence_transformers import SentenceTransformer
 import numpy as np
+import torch
 
 from app.utils.logger import get_logger
-from app.utils.progress import ProgressManager
 
 logger = get_logger(__name__)
 
 _model = None
+_lock = None  # для thread-safety
+
+
+def get_embedding_model():
+    global _model, _lock
+    if _lock is None:
+        import threading
+        _lock = threading.Lock()
+
+    if _model is None:
+        with _lock:  # защита от race condition
+            if _model is None:
+                logger.info("Loading embedding model...")
+                torch.set_default_dtype(torch.float32)
+                
+                _model = SentenceTransformer(
+                    "intfloat/multilingual-e5-base",
+                    device="cpu",
+                    trust_remote_code=True
+                )
+                logger.info("Embedding model loaded")
+    return _model
 
 
 def normalize(vectors):
@@ -20,24 +42,6 @@ def normalize(vectors):
     )
 
     return vectors / norms
-
-
-def get_embedding_model():
-
-    global _model
-
-    if _model is None:
-
-        logger.info("Loading embedding model")
-
-        _model = SentenceTransformer(
-            "intfloat/multilingual-e5-base",
-            device="cpu"
-        )
-
-        logger.info("Embedding model loaded")
-
-    return _model
 
 
 def embed_texts(
