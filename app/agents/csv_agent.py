@@ -16,19 +16,24 @@ class CSVAgent:
         self.orchestrator = OrchestratorAgent()
         self.max_workers = max_workers
 
-    def process_row(self, row: dict):
+    def process_row(self, row):
         try:
             result = self.orchestrator.run_question(row["question"])
             return {
                 "question": row["question"],
                 "answer": result["answer"],
-                "document": str(result["documents"])   # str, чтобы в csv нормально сохранилось
+                "document": str(result.get("documents", []))
             }
         except Exception as e:
-            logger.exception(f"Ошибка при обработке вопроса: {row['question']}")
+            import traceback
+            error_msg = traceback.format_exc()
+            print(f"\n❌ Ошибка при обработке вопроса:\n{row['question']}")
+            print(f"Тип ошибки: {type(e).__name__}")
+            print(error_msg[:1500])   # первые 1500 символов трассировки
+            
             return {
                 "question": row["question"],
-                "answer": "Ошибка обработки вопроса",
+                "answer": f"Ошибка: {type(e).__name__}",
                 "document": "[]"
             }
 
