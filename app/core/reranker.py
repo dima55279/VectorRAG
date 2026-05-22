@@ -4,13 +4,13 @@ from sentence_transformers import CrossEncoder
 class Reranker:
 
     def __init__(self):
-        print("🔄 Загрузка Reranker (BAAI/bge-reranker-v2-m3)...")
+        print("🔄 Загрузка Reranker (cross-encoder/ms-marco-MiniLM-L-12-v2)...")
         
         # Фиксы для проблем с torch
         torch.set_default_dtype(torch.float32)
         
         self.model = CrossEncoder(
-            "BAAI/bge-reranker-v2-m3",
+            "cross-encoder/ms-marco-MiniLM-L-12-v2",
             device="cpu",
             trust_remote_code=True
         )

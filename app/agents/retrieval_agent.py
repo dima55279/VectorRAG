@@ -33,7 +33,7 @@ class RetrievalAgent:
 
             key = item["document"]["content"]
 
-            scores[key] += 1 / (rank + 60)
+            scores[key] += 1 / (rank + 30)
 
             docs[key] = item
 
@@ -41,7 +41,7 @@ class RetrievalAgent:
 
             key = item["document"]["content"]
 
-            scores[key] += 1 / (rank + 60)
+            scores[key] += 1 / (rank + 30)
 
             docs[key] = item
 

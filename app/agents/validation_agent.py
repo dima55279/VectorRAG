@@ -11,6 +11,6 @@ class ValidationAgent:
 
         score = docs[0]["score"]
 
-        state["valid"] = score > 0.45
+        state["valid"] = score > 0.25
 
         return state
