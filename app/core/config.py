@@ -6,7 +6,7 @@ load_dotenv()
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral")
 EMBEDDING_MODEL = os.getenv(
     "EMBEDDING_MODEL",
-    "BAAI/bge-m3"
+    "intfloat/multilingual-e5-base"
 )
 
 TOP_K = int(os.getenv("TOP_K", 5))

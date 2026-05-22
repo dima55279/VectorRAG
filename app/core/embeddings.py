@@ -31,7 +31,7 @@ def get_embedding_model():
         logger.info("Loading embedding model")
 
         _model = SentenceTransformer(
-            "BAAI/bge-m3",
+            "intfloat/multilingual-e5-base",
             device="cpu"
         )
 
