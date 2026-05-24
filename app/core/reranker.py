@@ -1,35 +1,24 @@
 import torch
-
-# В начале файла после импортов
-if torch.cuda.is_available():
-    print(f"Found {torch.cuda.device_count()} GPU(s)")
-    device = "cuda" if torch.cuda.device_count() > 1 else "cuda:0"
-else:
-    device = "cpu"
-
 from sentence_transformers import CrossEncoder
 
 class Reranker:
 
     def __init__(self):
         print("🔄 Загрузка Reranker (BAAI/bge-reranker-v2-m3)...")
-        
-        # Фиксы для проблем с torch
+
+        # Фикс совместимости
         torch.set_default_dtype(torch.float32)
-        
+
+        # Используем только одну GPU (cuda:0)
+        device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        print(f"✅ Используется устройство: {device}")
+
         self.model = CrossEncoder(
             "BAAI/bge-reranker-v2-m3",
-            device="cpu",
+            device=device,           # ← явно указываем cuda:0
             trust_remote_code=True
         )
 
-        if torch.cuda.is_available() and torch.cuda.device_count() > 1:
-            print("Using DataParallel for reranker")
-            self.model.model = torch.nn.DataParallel(self.model.model)
-            # Сохраняем predict
-            original_predict = self.model.predict
-            self.model.predict = lambda *args, **kwargs: original_predict(*args, **kwargs)
-        
         print("✅ Reranker успешно загружен")
 
     def rerank(self, query, docs, top_k=5):
@@ -41,7 +30,7 @@ class Reranker:
         try:
             scores = self.model.predict(pairs)
         except Exception as e:
-            print(f"⚠️ Ошибка при rerank.predict: {e}")
+            print(f"⚠️ Ошибка reranker.predict: {e}")
             return docs[:top_k]  # fallback
 
         reranked = sorted(
