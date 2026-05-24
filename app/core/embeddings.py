@@ -31,10 +31,10 @@ def get_embedding_model():
 
         base_model = SentenceTransformer(
             "intfloat/multilingual-e5-base",
-            device="cpu",                    # сначала грузим на CPU
+            device = "cuda:1",                    # сначала грузим на CPU
             trust_remote_code=True
         )
-
+        """
         # Multi-GPU поддержка
         if torch.cuda.is_available() and torch.cuda.device_count() > 1:
             print(f"✅ Найдено {torch.cuda.device_count()} GPU. Используем DataParallel.")
@@ -48,7 +48,7 @@ def get_embedding_model():
             base_model = base_model.to('cuda')
         else:
             print("⚠️ CUDA недоступен, работаем на CPU")
-
+        """
         _model = base_model
         logger.info("Embedding model loaded successfully")
     
