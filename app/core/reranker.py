@@ -19,13 +19,16 @@ class Reranker:
         
         self.model = CrossEncoder(
             "BAAI/bge-reranker-v2-m3",
-            device=device,
+            device="cpu",
             trust_remote_code=True
         )
 
-        # DataParallel для reranker (если поддерживается)
-        if torch.cuda.device_count() > 1:
+        if torch.cuda.is_available() and torch.cuda.device_count() > 1:
+            print("Using DataParallel for reranker")
             self.model.model = torch.nn.DataParallel(self.model.model)
+            # Сохраняем predict
+            original_predict = self.model.predict
+            self.model.predict = lambda *args, **kwargs: original_predict(*args, **kwargs)
         
         print("✅ Reranker успешно загружен")
 

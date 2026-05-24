@@ -26,21 +26,32 @@ def get_embedding_model():
     global _model
     if _model is None:
         logger.info("Loading embedding model...")
-        
-        # === Фиксы для meta tensor ошибки ===
+
         torch.set_default_dtype(torch.float32)
-        
-        _model = SentenceTransformer(
+
+        base_model = SentenceTransformer(
             "intfloat/multilingual-e5-base",
-            device=device,
+            device="cpu",                    # сначала грузим на CPU
             trust_remote_code=True
         )
 
-        # Если хочешь использовать обе GPU:
-        if torch.cuda.device_count() > 1:
-            _model = torch.nn.DataParallel(_model)
-        
+        # Multi-GPU поддержка
+        if torch.cuda.is_available() and torch.cuda.device_count() > 1:
+            print(f"✅ Найдено {torch.cuda.device_count()} GPU. Используем DataParallel.")
+            # Правильный способ для SentenceTransformer
+            base_model = base_model.to('cuda')
+            base_model = torch.nn.DataParallel(base_model)
+            # Важно: сохраняем оригинальный метод encode
+            base_model.encode = base_model.module.encode
+        elif torch.cuda.is_available():
+            print("✅ Используется одна GPU")
+            base_model = base_model.to('cuda')
+        else:
+            print("⚠️ CUDA недоступен, работаем на CPU")
+
+        _model = base_model
         logger.info("Embedding model loaded successfully")
+    
     return _model
 
 
