@@ -1,5 +1,6 @@
 from sentence_transformers import SentenceTransformer
 import numpy as np
+import torch
 
 from app.utils.logger import get_logger
 
@@ -17,12 +18,17 @@ def normalize(vectors):
 def get_embedding_model():
     global _model
     if _model is None:
-        logger.info("Loading embedding model")
+        logger.info("Loading embedding model...")
+        
+        # === Фиксы для meta tensor ошибки ===
+        torch.set_default_dtype(torch.float32)
+        
         _model = SentenceTransformer(
             "intfloat/multilingual-e5-base",
-            device="cpu"
+            device="cpu",
+            trust_remote_code=True
         )
-        logger.info("Embedding model loaded")
+        logger.info("Embedding model loaded successfully")
     return _model
 
 
@@ -34,19 +40,16 @@ def embed_texts(texts, batch_size=16):
     embeddings = []
     logger.info(f"Generating embeddings for {len(texts)} chunks")
 
-    # === Исправленный прогресс-бар с fallback ===
     try:
         from app.utils.progress import ProgressManager
-        progress_iter = ProgressManager.track(
+        progress = ProgressManager.track(
             range(0, len(texts), batch_size),
             desc="Embedding batches"
         )
-    except Exception:
-        # Fallback если ProgressManager не импортируется
-        logger.warning("ProgressManager not available, using simple range")
-        progress_iter = range(0, len(texts), batch_size)
+    except:
+        progress = range(0, len(texts), batch_size)
 
-    for i in progress_iter:
+    for i in progress:
         batch = texts[i:i + batch_size]
         batch_embeddings = model.encode(batch)
         embeddings.extend(batch_embeddings)
