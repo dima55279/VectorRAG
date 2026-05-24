@@ -34,12 +34,12 @@ class OrchestratorAgent:
         self.answer_agent = AnswerAgent()
         self.source_agent = SourceTrackingAgent()
 
-        self.graph = RunnableSequence(
-            RunnableLambda(self.retrieval_agent.run),
-            RunnableLambda(self.reranker_agent.run),
-            RunnableLambda(self.validation_agent.run),
-            RunnableLambda(self.source_agent.run),
-            RunnableLambda(self.answer_agent.run)
+        self.graph = (
+            RunnableLambda(self.retrieval_agent.run)
+            | RunnableLambda(self.reranker_agent.run)
+            | RunnableLambda(self.validation_agent.run)
+            | RunnableLambda(self.source_agent.run)
+            | RunnableLambda(self.answer_agent.run)
         )
 
     def run_question(self, question):
