@@ -1,7 +1,4 @@
-from langchain_core.runnables import (
-    RunnableLambda,
-    RunnableSequence
-)
+from langchain_core.runnables import RunnableLambda
 
 from app.agents.retrieval_agent import RetrievalAgent
 from app.agents.reranker_agent import RerankerAgent
@@ -34,6 +31,7 @@ class OrchestratorAgent:
         self.answer_agent = AnswerAgent()
         self.source_agent = SourceTrackingAgent()
 
+        # Исправлено: правильный LCEL chain
         self.graph = (
             RunnableLambda(self.retrieval_agent.run)
             | RunnableLambda(self.reranker_agent.run)

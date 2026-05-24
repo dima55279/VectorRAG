@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 
 class CSVAgent:
 
-    def __init__(self, max_workers=3):
+    def __init__(self, max_workers=1):   # ← Исправлено
         self.orchestrator = OrchestratorAgent()
         self.max_workers = max_workers
 
@@ -29,7 +29,7 @@ class CSVAgent:
             error_msg = traceback.format_exc()
             print(f"\n❌ Ошибка при обработке вопроса:\n{row['question']}")
             print(f"Тип ошибки: {type(e).__name__}")
-            print(error_msg[:1500])   # первые 1500 символов трассировки
+            print(error_msg[:1500])
             
             return {
                 "question": row["question"],
@@ -57,7 +57,6 @@ class CSVAgent:
 
         result_df = pd.DataFrame(results)
         
-        # Сохраняем
         result_df.to_csv(output_csv, index=False)
         
         logger.info(f"Результат сохранён: {output_csv}")
