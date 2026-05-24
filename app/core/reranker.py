@@ -1,34 +1,29 @@
 import torch
-
-# В начале файла после импортов
-if torch.cuda.is_available():
-    print(f"Found {torch.cuda.device_count()} GPU(s)")
-    device = "cuda" if torch.cuda.device_count() > 1 else "cuda:0"
-else:
-    device = "cpu"
-
 from sentence_transformers import CrossEncoder
 
 class Reranker:
 
     def __init__(self):
-        print("🔄 Загрузка Reranker (BAAI/bge-reranker-v2-m3)...")
-        
-        # Фиксы для проблем с torch
+        print("🔄 Загрузка reranker...")
+
         torch.set_default_dtype(torch.float32)
-        
+
+        # Загружаем модель
         self.model = CrossEncoder(
             "BAAI/bge-reranker-v2-m3",
-            device="cpu",
+            device="cpu",           # сначала на CPU
             trust_remote_code=True
         )
 
-        if torch.cuda.is_available() and torch.cuda.device_count() > 1:
-            print("Using DataParallel for reranker")
-            self.model.model = torch.nn.DataParallel(self.model.model)
-            # Сохраняем predict
-            original_predict = self.model.predict
-            self.model.predict = lambda *args, **kwargs: original_predict(*args, **kwargs)
+        # Переносим на GPU
+        if torch.cuda.is_available():
+            print(f"✅ Перенос reranker на GPU (найдено {torch.cuda.device_count()} GPU)")
+            self.model = self.model.to('cuda')
+            
+            # DataParallel только если больше одной GPU
+            if torch.cuda.device_count() > 1:
+                print("🔀 Используем DataParallel")
+                self.model.model = torch.nn.DataParallel(self.model.model)
         
         print("✅ Reranker успешно загружен")
 
@@ -41,8 +36,8 @@ class Reranker:
         try:
             scores = self.model.predict(pairs)
         except Exception as e:
-            print(f"⚠️ Ошибка при rerank.predict: {e}")
-            return docs[:top_k]  # fallback
+            print(f"⚠️ Ошибка reranker.predict: {e}")
+            return docs[:top_k]
 
         reranked = sorted(
             zip(docs, scores),
