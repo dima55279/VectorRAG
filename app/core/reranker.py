@@ -4,27 +4,29 @@ from sentence_transformers import CrossEncoder
 class Reranker:
 
     def __init__(self):
-        print("🔄 Загрузка reranker...")
+        print("🔄 Загрузка reranker (BAAI/bge-reranker-v2-m3)...")
 
         torch.set_default_dtype(torch.float32)
 
         # Загружаем модель
         self.model = CrossEncoder(
             "BAAI/bge-reranker-v2-m3",
-            device="cpu",           # сначала на CPU
+            device="cpu",                    # сначала всегда на CPU
             trust_remote_code=True
         )
 
-        # Переносим на GPU
+        # Переносим на GPU правильно
         if torch.cuda.is_available():
-            print(f"✅ Перенос reranker на GPU (найдено {torch.cuda.device_count()} GPU)")
-            self.model = self.model.to('cuda')
+            print(f"✅ Переносим reranker на GPU (найдено {torch.cuda.device_count()} GPU)")
+
+            # Правильный способ для CrossEncoder
+            self.model.model = self.model.model.to('cuda')
             
-            # DataParallel только если больше одной GPU
+            # DataParallel, если больше 1 GPU
             if torch.cuda.device_count() > 1:
-                print("🔀 Используем DataParallel")
+                print("🔀 Используем DataParallel для reranker")
                 self.model.model = torch.nn.DataParallel(self.model.model)
-        
+
         print("✅ Reranker успешно загружен")
 
     def rerank(self, query, docs, top_k=5):
