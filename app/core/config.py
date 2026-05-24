@@ -10,6 +10,6 @@ EMBEDDING_MODEL = os.getenv(
 )
 
 TOP_K = int(os.getenv("TOP_K", 10))
-MAX_WORKERS = int(os.getenv("MAX_WORKERS", 8))
+MAX_WORKERS = int(os.getenv("MAX_WORKERS", 3))
 
 FAISS_PATH = "data/faiss_index"
