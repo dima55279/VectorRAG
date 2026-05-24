@@ -9,7 +9,7 @@ EMBEDDING_MODEL = os.getenv(
     "intfloat/multilingual-e5-base"
 )
 
-TOP_K = int(os.getenv("TOP_K", 10))
-MAX_WORKERS = int(os.getenv("MAX_WORKERS", 4))
+TOP_K = int(os.getenv("TOP_K", 5))
+MAX_WORKERS = int(os.getenv("MAX_WORKERS", 8))
 
 FAISS_PATH = "data/faiss_index"
