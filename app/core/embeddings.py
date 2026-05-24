@@ -2,6 +2,13 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 import torch
 
+# В начале файла после импортов
+if torch.cuda.is_available():
+    print(f"Found {torch.cuda.device_count()} GPU(s)")
+    device = "cuda" if torch.cuda.device_count() > 1 else "cuda:0"
+else:
+    device = "cpu"
+
 from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -25,9 +32,14 @@ def get_embedding_model():
         
         _model = SentenceTransformer(
             "intfloat/multilingual-e5-base",
-            device="cpu",
+            device=device,
             trust_remote_code=True
         )
+
+        # Если хочешь использовать обе GPU:
+        if torch.cuda.device_count() > 1:
+            _model = torch.nn.DataParallel(_model)
+        
         logger.info("Embedding model loaded successfully")
     return _model
 
