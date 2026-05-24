@@ -1,32 +1,35 @@
 import torch
+
+# В начале файла после импортов
+if torch.cuda.is_available():
+    print(f"Found {torch.cuda.device_count()} GPU(s)")
+    device = "cuda" if torch.cuda.device_count() > 1 else "cuda:0"
+else:
+    device = "cpu"
+
 from sentence_transformers import CrossEncoder
 
 class Reranker:
 
     def __init__(self):
-        print("🔄 Загрузка reranker (BAAI/bge-reranker-v2-m3)...")
-
+        print("🔄 Загрузка Reranker (BAAI/bge-reranker-v2-m3)...")
+        
+        # Фиксы для проблем с torch
         torch.set_default_dtype(torch.float32)
-
-        # Загружаем модель
+        
         self.model = CrossEncoder(
             "BAAI/bge-reranker-v2-m3",
-            device="cpu",                    # сначала всегда на CPU
+            device="cpu",
             trust_remote_code=True
         )
 
-        # Переносим на GPU правильно
-        if torch.cuda.is_available():
-            print(f"✅ Переносим reranker на GPU (найдено {torch.cuda.device_count()} GPU)")
-
-            # Правильный способ для CrossEncoder
-            self.model.model = self.model.model.to('cuda')
-            
-            # DataParallel, если больше 1 GPU
-            if torch.cuda.device_count() > 1:
-                print("🔀 Используем DataParallel для reranker")
-                self.model.model = torch.nn.DataParallel(self.model.model)
-
+        if torch.cuda.is_available() and torch.cuda.device_count() > 1:
+            print("Using DataParallel for reranker")
+            self.model.model = torch.nn.DataParallel(self.model.model)
+            # Сохраняем predict
+            original_predict = self.model.predict
+            self.model.predict = lambda *args, **kwargs: original_predict(*args, **kwargs)
+        
         print("✅ Reranker успешно загружен")
 
     def rerank(self, query, docs, top_k=5):
@@ -38,8 +41,8 @@ class Reranker:
         try:
             scores = self.model.predict(pairs)
         except Exception as e:
-            print(f"⚠️ Ошибка reranker.predict: {e}")
-            return docs[:top_k]
+            print(f"⚠️ Ошибка при rerank.predict: {e}")
+            return docs[:top_k]  # fallback
 
         reranked = sorted(
             zip(docs, scores),
