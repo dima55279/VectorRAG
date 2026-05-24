@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 
 class CSVAgent:
 
-    def __init__(self, max_workers=8):
+    def __init__(self, max_workers=3):
         self.orchestrator = OrchestratorAgent()
         self.max_workers = max_workers
 
