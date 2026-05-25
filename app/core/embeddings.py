@@ -30,7 +30,7 @@ def get_embedding_model():
         torch.set_default_dtype(torch.float32)
 
         base_model = SentenceTransformer(
-            "Qwen/Qwen3-Embedding-0.6B",
+            "jina-embeddings-v5-text-small",
             device=device,          # ← Исправлено
             trust_remote_code=True
         )
