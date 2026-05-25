@@ -30,7 +30,7 @@ def get_embedding_model():
         torch.set_default_dtype(torch.float32)
 
         base_model = SentenceTransformer(
-            "jina-embeddings-v5-text-small",
+            "jinaai/jina-embeddings-v4",
             device=device,          # ← Исправлено
             trust_remote_code=True
         )

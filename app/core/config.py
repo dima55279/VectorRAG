@@ -6,7 +6,7 @@ load_dotenv()
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral")
 EMBEDDING_MODEL = os.getenv(
     "EMBEDDING_MODEL",
-    "jina-embeddings-v5-text-small"
+    "jinaai/jina-embeddings-v4"
 )
 
 TOP_K = int(os.getenv("TOP_K", 10))
