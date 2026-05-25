@@ -30,7 +30,7 @@ def get_embedding_model():
         torch.set_default_dtype(torch.float32)
 
         base_model = SentenceTransformer(
-            "intfloat/multilingual-e5-base",
+            "Qwen/Qwen3-Embedding-4B",
             device=device,          # ← Исправлено
             trust_remote_code=True
         )
