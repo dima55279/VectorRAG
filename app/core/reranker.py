@@ -4,7 +4,7 @@ from sentence_transformers import CrossEncoder
 class Reranker:
 
     def __init__(self):
-        print("🔄 Загрузка Reranker (bge-reranker-base)...")
+        print("🔄 Загрузка Reranker (BAAI/bge-reranker-v2-m3)...")
 
         # Фикс совместимости
         torch.set_default_dtype(torch.float32)
@@ -14,7 +14,7 @@ class Reranker:
         print(f"✅ Используется устройство: {device}")
 
         self.model = CrossEncoder(
-            "bge-reranker-base",
+            "BAAI/bge-reranker-v2-m3",
             device=device,           # ← явно указываем cuda:0
             trust_remote_code=True
         )

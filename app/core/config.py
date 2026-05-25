@@ -6,10 +6,10 @@ load_dotenv()
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "mistral")
 EMBEDDING_MODEL = os.getenv(
     "EMBEDDING_MODEL",
-    "Alibaba-NLP/gte-multilingual-base"
+    "intfloat/multilingual-e5-base"
 )
 
 TOP_K = int(os.getenv("TOP_K", 10))
-MAX_WORKERS = int(os.getenv("MAX_WORKERS", 1))
+MAX_WORKERS = int(os.getenv("MAX_WORKERS", 3))
 
 FAISS_PATH = "data/faiss_index"
